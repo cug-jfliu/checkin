@@ -3,7 +3,6 @@
 # ================================
 backend/target/
 backend/**/*.rs.bk
-backend/Cargo.lock
 
 # ================================
 # Node / Frontend
