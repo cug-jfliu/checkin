@@ -61,6 +61,7 @@ async fn register(
         name: Set(payload.name.clone()),
         password_hash: Set(password_hash),
         role: Set(role.to_string()),
+        show_in_weekly: Set(true),
         created_at: Set(chrono::Utc::now()),
         ..Default::default()
     };
