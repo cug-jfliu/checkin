@@ -8,6 +8,7 @@ use crate::utils::{errors::AppError, jwt::verify_token};
 
 pub struct AuthUser {
     pub id: i32,
+    #[allow(dead_code)]
     pub username: String,
     pub role: String,
 }
