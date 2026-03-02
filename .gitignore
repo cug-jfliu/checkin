@@ -1,0 +1,45 @@
+# ================================
+# Rust / Backend
+# ================================
+backend/target/
+backend/**/*.rs.bk
+backend/Cargo.lock
+
+# ================================
+# Node / Frontend
+# ================================
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.pnpm-store/
+
+# ================================
+# Database
+# ================================
+**/*.sqlite
+**/*.sqlite3
+**/*.sqlite-shm
+**/*.sqlite-wal
+**/*.db
+
+# ================================
+# Environment & Secrets
+# ================================
+.env
+.env.*
+!.env.example
+
+# ================================
+# Editor & OS
+# ================================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ================================
+# Logs
+# ================================
+*.log
