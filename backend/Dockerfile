@@ -10,6 +10,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
+    libsqlite3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # 先只复制依赖声明，利用 Docker 层缓存加速重复构建
@@ -35,6 +36,7 @@ WORKDIR /app
 # 安装运行时依赖（ca-certificates 用于 HTTPS 请求）
 RUN apt-get update && apt-get install -y \
     ca-certificates \
+    libsqlite3-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # 从 builder 阶段复制编译好的二进制
