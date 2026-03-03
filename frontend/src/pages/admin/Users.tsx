@@ -105,6 +105,7 @@ export default function AdminUsers() {
     const emptyForm = { id: 0, username: '', name: '', password: '', role: 'student', show_in_weekly: true };
     const [formData, setFormData] = useState(emptyForm);
     const [submitting, setSubmitting] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -152,11 +153,12 @@ export default function AdminUsers() {
             } else {
                 await api.post(`/admin/users`, payload);
             }
+            setErrorMsg(null);
             setIsAddOpen(false);
             setIsEditOpen(false);
             fetchUsers();
         } catch (err: any) {
-            alert(err.response?.data?.error || '保存失败');
+            setErrorMsg(err.response?.data?.error || '保存失败');
         } finally {
             setSubmitting(false);
         }
@@ -170,7 +172,7 @@ export default function AdminUsers() {
             setDeleteTarget(null);
             fetchUsers();
         } catch (err: any) {
-            alert(err.response?.data?.error || '删除失败');
+            setErrorMsg(err.response?.data?.error || '删除失败');
         } finally {
             setDeleting(false);
         }
@@ -191,6 +193,7 @@ export default function AdminUsers() {
                             <DialogTitle>新建用户</DialogTitle>
                         </DialogHeader>
                         <UserFormFields formData={formData} setFormData={setFormData} isEdit={false} />
+                        {errorMsg && <p className="text-sm text-red-400 px-1 pb-2">{errorMsg}</p>}
                         <DialogFooter>
                             <Button disabled={submitting || !formData.username} onClick={handleSave} className="bg-blue-600 hover:bg-blue-500 text-white">
                                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -265,6 +268,7 @@ export default function AdminUsers() {
                             <DialogTitle>编辑用户</DialogTitle>
                         </DialogHeader>
                         <UserFormFields formData={formData} setFormData={setFormData} isEdit={true} />
+                        {errorMsg && <p className="text-sm text-red-400 px-1 pb-2">{errorMsg}</p>}
                         <DialogFooter>
                             <Button disabled={submitting || !formData.username} onClick={handleSave} className="bg-blue-600 hover:bg-blue-500 text-white">
                                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

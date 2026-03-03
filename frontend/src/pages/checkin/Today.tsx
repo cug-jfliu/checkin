@@ -9,6 +9,7 @@ export default function CheckinToday() {
     const [loading, setLoading] = useState(false);
     const [checkedIn, setCheckedIn] = useState(false);
     const [checkinTime, setCheckinTime] = useState<string | null>(null);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const todayIsWorkday = isWorkday(new Date());
 
     useEffect(() => {
@@ -29,6 +30,7 @@ export default function CheckinToday() {
 
     const handleCheckin = () => {
         setLoading(true);
+        setErrorMsg(null);
         if (!navigator.geolocation) {
             submitCheckin(null, null);
             return;
@@ -50,7 +52,7 @@ export default function CheckinToday() {
             setCheckedIn(true);
             setCheckinTime(new Date(res.data.checkin_time).toLocaleTimeString('zh-CN'));
         } catch (err: any) {
-            alert(err.response?.data?.error || '签到失败');
+            setErrorMsg(err.response?.data?.error || '签到失败');
         } finally {
             setLoading(false);
         }
@@ -63,6 +65,9 @@ export default function CheckinToday() {
                 <CardDescription>
                     {new Date().toLocaleDateString('zh-CN', { weekday: 'long', month: 'long', day: 'numeric' })}
                 </CardDescription>
+                {errorMsg && (
+                    <p className="text-sm text-red-400 mt-1">{errorMsg}</p>
+                )}
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center p-8 min-h-[300px]">
                 {!todayIsWorkday ? (
