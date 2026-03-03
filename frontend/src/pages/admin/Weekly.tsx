@@ -140,7 +140,7 @@ export default function AdminWeekly() {
                     <TableHeader>
                         <TableRow>
                             <TableHead className="min-w-[120px]">学生</TableHead>
-                            {weekDays.map((day, i) => {
+                            {weekDays.map((day) => {
                                 const d = new Date(day + 'T12:00:00');
                                 return (
                                     <TableHead key={day} className="text-center min-w-[100px]">
