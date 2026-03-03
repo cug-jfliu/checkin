@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     AppState,
     models::{checkin, user},
-    utils::{auth_guard::AuthUser, errors::AppError},
+    utils::{auth_guard::AuthUser, errors::AppError, timezone},
 };
 
 pub fn router() -> Router<AppState> {
@@ -51,13 +51,9 @@ async fn get_records(
         .order_by_desc(checkin::Column::CheckinTime);
 
     if let Some(date_str) = query.date {
-        use chrono::{Datelike, NaiveDate, TimeZone, Utc};
-        let date = NaiveDate::parse_from_str(&date_str, "%Y-%m-%d")
-            .map_err(|_| AppError::BadRequest("Invalid date format".into()))?;
-        let start_of_day = Utc
-            .with_ymd_and_hms(date.year(), date.month(), date.day(), 0, 0, 0)
-            .unwrap();
-        let end_of_day = start_of_day + chrono::Duration::days(1);
+        let (start_of_day, end_of_day) =
+            timezone::parse_local_date_bounds(&date_str, timezone::timezone_offset())
+                .map_err(|_| AppError::BadRequest("Invalid date format".into()))?;
 
         select = select
             .filter(checkin::Column::CheckinTime.gte(start_of_day))
@@ -277,20 +273,9 @@ async fn get_weekly_export(
         return Err(AppError::Unauthorized("Admin access required".into()));
     }
 
-    use chrono::{Datelike, NaiveDate, TimeZone, Utc};
-    let start_date = NaiveDate::parse_from_str(&query.start_date, "%Y-%m-%d")
-        .map_err(|_| AppError::BadRequest("Invalid start_date format".into()))?;
-
-    let start_of_week = Utc
-        .with_ymd_and_hms(
-            start_date.year(),
-            start_date.month(),
-            start_date.day(),
-            0,
-            0,
-            0,
-        )
-        .unwrap();
+    let (start_of_week, _) =
+        timezone::parse_local_date_bounds(&query.start_date, timezone::timezone_offset())
+            .map_err(|_| AppError::BadRequest("Invalid start_date format".into()))?;
     let end_of_week = start_of_week + chrono::Duration::days(7);
 
     // Get all students that should be shown in weekly reports

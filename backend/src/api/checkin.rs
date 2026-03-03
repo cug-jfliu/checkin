@@ -4,13 +4,14 @@ use axum::{
     http::StatusCode,
     routing::{get, post},
 };
+use chrono::Utc;
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     AppState,
     models::checkin,
-    utils::{auth_guard::AuthUser, errors::AppError},
+    utils::{auth_guard::AuthUser, errors::AppError, timezone},
 };
 
 pub fn router() -> Router<AppState> {
@@ -39,13 +40,7 @@ async fn create_checkin(
     user: AuthUser,
     Json(payload): Json<CheckinPayload>,
 ) -> Result<(StatusCode, Json<CheckinResponse>), AppError> {
-    // Check if checkin already exists for today
-    use chrono::{Datelike, TimeZone, Utc};
-    let now = Utc::now();
-    let start_of_day = Utc
-        .with_ymd_and_hms(now.year(), now.month(), now.day(), 0, 0, 0)
-        .unwrap();
-    let end_of_day = start_of_day + chrono::Duration::days(1);
+    let (start_of_day, end_of_day) = timezone::local_day_bounds_today(timezone::timezone_offset());
 
     let existing = checkin::Entity::find()
         .filter(checkin::Column::UserId.eq(user.id))
@@ -58,6 +53,7 @@ async fn create_checkin(
         return Err(AppError::BadRequest("Already checked in today".into()));
     }
 
+    let now = Utc::now();
     let new_checkin = checkin::ActiveModel {
         user_id: Set(user.id),
         checkin_time: Set(now),
@@ -83,12 +79,7 @@ async fn get_today_checkin(
     State(state): State<AppState>,
     user: AuthUser,
 ) -> Result<Json<Option<CheckinResponse>>, AppError> {
-    use chrono::{Datelike, TimeZone, Utc};
-    let now = Utc::now();
-    let start_of_day = Utc
-        .with_ymd_and_hms(now.year(), now.month(), now.day(), 0, 0, 0)
-        .unwrap();
-    let end_of_day = start_of_day + chrono::Duration::days(1);
+    let (start_of_day, end_of_day) = timezone::local_day_bounds_today(timezone::timezone_offset());
 
     let existing = checkin::Entity::find()
         .filter(checkin::Column::UserId.eq(user.id))
