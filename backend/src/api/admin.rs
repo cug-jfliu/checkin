@@ -20,6 +20,9 @@ pub fn router() -> Router<AppState> {
         .route("/users/{id}", put(update_user))
         .route("/users/{id}", delete(delete_user))
         .route("/weekly-export", get(get_weekly_export))
+        .route("/checkins", post(create_checkin_for_user))
+        .route("/checkins/{id}", put(update_checkin_time))
+        .route("/checkins/{id}", delete(delete_checkin))
 }
 
 #[derive(Deserialize)]
@@ -250,6 +253,121 @@ async fn delete_user(
 
     Ok(Json(serde_json::json!({ "message": "User deleted" })))
 }
+
+// ─────────────── Admin checkin management ───────────────
+
+#[derive(Deserialize)]
+pub struct AdminCreateCheckinPayload {
+    pub user_id: i32,
+    pub checkin_time: String, // RFC3339
+    pub latitude: Option<f64>,
+    pub longitude: Option<f64>,
+}
+
+async fn create_checkin_for_user(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Json(payload): Json<AdminCreateCheckinPayload>,
+) -> Result<Json<AdminCheckinRecord>, AppError> {
+    if user.role != "admin" {
+        return Err(AppError::Unauthorized("Admin access required".into()));
+    }
+
+    let checkin_time = chrono::DateTime::parse_from_rfc3339(&payload.checkin_time)
+        .map(|dt| dt.with_timezone(&chrono::Utc))
+        .map_err(|_| AppError::BadRequest("Invalid checkin_time format, use RFC3339".into()))?;
+
+    let user_model = user::Entity::find_by_id(payload.user_id)
+        .one(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("User not found".into()))?;
+
+    let new_checkin = checkin::ActiveModel {
+        user_id: Set(payload.user_id),
+        checkin_time: Set(checkin_time),
+        latitude: Set(payload.latitude),
+        longitude: Set(payload.longitude),
+        ..Default::default()
+    };
+
+    let result = new_checkin.insert(&state.db).await?;
+
+    Ok(Json(AdminCheckinRecord {
+        id: result.id,
+        username: user_model.username,
+        name: user_model.name,
+        checkin_time: result.checkin_time.to_rfc3339(),
+        latitude: result.latitude,
+        longitude: result.longitude,
+    }))
+}
+
+#[derive(Deserialize)]
+pub struct AdminUpdateCheckinPayload {
+    pub checkin_time: String, // RFC3339
+    pub latitude: Option<f64>,
+    pub longitude: Option<f64>,
+}
+
+async fn update_checkin_time(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i32>,
+    Json(payload): Json<AdminUpdateCheckinPayload>,
+) -> Result<Json<AdminCheckinRecord>, AppError> {
+    if user.role != "admin" {
+        return Err(AppError::Unauthorized("Admin access required".into()));
+    }
+
+    let checkin_time = chrono::DateTime::parse_from_rfc3339(&payload.checkin_time)
+        .map(|dt| dt.with_timezone(&chrono::Utc))
+        .map_err(|_| AppError::BadRequest("Invalid checkin_time format, use RFC3339".into()))?;
+
+    let checkin_model = checkin::Entity::find_by_id(id)
+        .find_also_related(user::Entity)
+        .one(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Checkin not found".into()))?;
+
+    let (checkin_rec, user_model_opt) = checkin_model;
+    let user_model =
+        user_model_opt.ok_or_else(|| AppError::NotFound("Associated user not found".into()))?;
+
+    let mut active: checkin::ActiveModel = checkin_rec.into();
+    active.checkin_time = Set(checkin_time);
+    active.latitude = Set(payload.latitude);
+    active.longitude = Set(payload.longitude);
+    let updated = active.update(&state.db).await?;
+
+    Ok(Json(AdminCheckinRecord {
+        id: updated.id,
+        username: user_model.username,
+        name: user_model.name,
+        checkin_time: updated.checkin_time.to_rfc3339(),
+        latitude: updated.latitude,
+        longitude: updated.longitude,
+    }))
+}
+
+async fn delete_checkin(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path(id): Path<i32>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    if user.role != "admin" {
+        return Err(AppError::Unauthorized("Admin access required".into()));
+    }
+
+    let res = checkin::Entity::delete_by_id(id).exec(&state.db).await?;
+
+    if res.rows_affected == 0 {
+        return Err(AppError::NotFound("Checkin not found".into()));
+    }
+
+    Ok(Json(serde_json::json!({ "message": "Checkin deleted" })))
+}
+
+// ─────────────── Weekly export ───────────────
 
 #[derive(Deserialize)]
 pub struct WeeklyQuery {
