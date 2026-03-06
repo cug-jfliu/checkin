@@ -2,7 +2,7 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../../store/useAuth';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MapPin, LogOut, History } from 'lucide-react';
+import { MapPin, LogOut, History, LayoutDashboard } from 'lucide-react';
 import { useEffect } from 'react';
 
 export default function CheckinLayout() {
@@ -36,9 +36,18 @@ export default function CheckinLayout() {
             <div className="w-full max-w-md space-y-4">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-xl font-bold text-white">欢迎，{user.name || user.username}</h1>
-                    <Button variant="ghost" size="icon" onClick={handleLogout}>
-                        <LogOut className="h-5 w-5 text-neutral-400" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                        {user.role === 'admin' && (
+                            <Button variant="ghost" size="sm" onClick={() => navigate('/admin/checkins')}
+                                className="text-neutral-400 hover:text-white text-xs gap-1.5">
+                                <LayoutDashboard className="h-4 w-4" />
+                                管理后台
+                            </Button>
+                        )}
+                        <Button variant="ghost" size="icon" onClick={handleLogout}>
+                            <LogOut className="h-5 w-5 text-neutral-400" />
+                        </Button>
+                    </div>
                 </div>
 
                 <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
