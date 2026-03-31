@@ -7,16 +7,17 @@ export type JwtClaims = {
   exp: number
 }
 
-function secretKey(secret?: string) {
-  const s = secret?.trim()
-  return new TextEncoder().encode(s && s.length > 0 ? s : 'secret')
+function secretKey(secret: string) {
+  const s = secret.trim()
+  if (!s) throw new Error('JWT secret missing: please set env JWT_SECRET')
+  return new TextEncoder().encode(s)
 }
 
 export async function createToken(params: {
   userId: number
   username: string
   role: string
-  secret?: string
+  secret: string
 }) {
   const nowSec = Math.floor(Date.now() / 1000)
   const exp = nowSec + 60 * 60 * 24 * 7
@@ -28,7 +29,7 @@ export async function createToken(params: {
     .sign(secretKey(params.secret))
 }
 
-export async function verifyToken(token: string, secret?: string): Promise<JwtClaims> {
+export async function verifyToken(token: string, secret: string): Promise<JwtClaims> {
   const { payload } = await jwtVerify(token, secretKey(secret))
   const subStr = payload.sub
   const username = payload.username

@@ -13,6 +13,7 @@ TIMEZONE_OFFSET_HOURS = "8"
 # 默认为 "https://unpkg.com/@myriaddreamin/typst-ts-web-compiler@0.7.0-rc2/pkg/typst_ts_web_compiler_bg.wasm"
 TYPST_WASM_UPSTREAM_URL = ""
 TYPST_WASM_KEY = "typst/typst_ts_web_compiler_bg.wasm"
+JWT_SECRET = "change_me_to_a_random_secret"
 
 [[r2_buckets]]
 binding = "ASSETS_BUCKET"
