@@ -8,7 +8,7 @@
 
 | 层级 | 技术 |
 |------|------|
-| 后端 | Rust · Axum · SeaORM · SQLite · JWT |
+| 后端 | Cloudflare Workers · Hono · D1 · JWT |
 | 前端 | React · TypeScript · Vite · Axios |
 
 ---
@@ -17,13 +17,6 @@
 
 ```
 checkin/
-├── backend/          # Rust 后端服务
-│   ├── src/
-│   │   ├── api/      # 路由处理器
-│   │   ├── models/   # 数据模型
-│   │   └── utils/    # JWT、认证守卫、错误处理
-│   ├── Dockerfile
-│   └── .env.example
 ├── worker/           # Cloudflare Workers 后端（Hono + D1 + JWT）
 └── frontend/         # React 前端
     ├── src/
@@ -54,22 +47,8 @@ checkin/
 
 ### 前置要求
 
-- Rust（推荐通过 [rustup](https://rustup.rs/) 安装）
 - Node.js ≥ 18 + pnpm（或 npm）
 - Cloudflare Wrangler（在 `worker/` 中作为 devDependency 安装）
-
-### 后端
-
-```bash
-cd backend
-
-# 复制并配置环境变量
-cp .env.example .env
-# 编辑 .env，设置 JWT_SECRET 等
-
-# 启动开发服务器（监听 :3000）
-cargo run
-```
 
 ### 前端
 
@@ -79,7 +58,7 @@ cd frontend
 # 安装依赖
 pnpm install
 
-# 复制环境变量（开发环境默认指向 localhost:3000）
+# 复制环境变量（开发环境默认指向 localhost:8787）
 cp .env.example .env.development
 
 # 启动开发服务器（监听 :5173）
@@ -108,50 +87,22 @@ pnpm d1:migrate:local
 pnpm dev
 ```
 
-> 说明：Rust 后端会在启动时自动跑 migration；Workers 版本改为通过 `wrangler d1 migrations apply` 显式执行（见脚本 `d1:migrate:*`）。
-
----
-
-## Docker 部署（后端）
-
-```bash
-# 构建镜像
-docker build -t checkin-backend ./backend
-
-# 运行容器
-# - 挂载 ./data 目录持久化 SQLite 数据库
-# - 通过 --env-file 注入环境变量
-docker run -d \
-  -p 3000:3000 \
-  -v $(pwd)/data:/app/data \
-  --env-file ./backend/.env \
-  --name checkin-backend \
-  checkin-backend
-```
-
-> **注意**：Docker 部署时请将 `.env` 中的 `DATABASE_URL` 改为：
-> ```
-> DATABASE_URL=sqlite:///app/data/database.sqlite?mode=rwc
-> ```
-> 确保数据库文件落在挂载卷内，避免容器重启后数据丢失。
+> 说明：Worker 版本通过 `wrangler d1 migrations apply` 显式执行迁移（见脚本 `d1:migrate:*`）。
 
 ---
 
 ## 环境变量
 
-### 后端 `backend/.env`
+### Worker（Cloudflare）
 
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `DATABASE_URL` | SQLite 数据库路径 | `sqlite://database.sqlite?mode=rwc` |
-| `JWT_SECRET` | JWT 签名密钥（生产环境务必修改） | `your_random_secret` |
-| `RUST_LOG` | 日志级别 | `info` |
+- **密钥（Secret）**：用 `wrangler secret put JWT_SECRET` 设置（生产环境务必设置强随机值）
+- **D1 迁移**：本地用 `pnpm d1:migrate:local`，远程用 `pnpm d1:migrate:remote`
 
 ### 前端 `frontend/.env.development` / `.env.production`
 
 | 变量 | 说明 | 示例 |
 |------|------|------|
-| `VITE_API_BASE_URL` | 后端 API 基础地址 | `http://localhost:3000/api` |
+| `VITE_API_BASE_URL` | 后端 API 基础地址 | `http://localhost:8787/api`（本地 wrangler dev）/ `/api`（同域部署） |
 
 ---
 

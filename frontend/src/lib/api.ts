@@ -22,7 +22,7 @@ api.interceptors.response.use(
         if (error.response && error.response.status === 401) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            // If we are not on login page, we could redirect or handle in UI
+            // 如果不在登录页，可在 UI 层做跳转或提示
         }
         return Promise.reject(error);
     }
