@@ -1,0 +1,27 @@
+{
+  "name": "checkin-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "dev:remote": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:with-frontend": "pnpm -C ../frontend install && pnpm -C ../frontend build && wrangler deploy",
+    "d1:migrate:local": "wrangler d1 migrations apply checkin_db --local",
+    "d1:migrate:remote": "wrangler d1 migrations apply checkin_db",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@hono/swagger-ui": "^0.6.1",
+    "@hono/zod-openapi": "^1.2.4",
+    "@noble/hashes": "^1.8.0",
+    "hono": "^4.9.0",
+    "jose": "^6.1.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260329.1",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.16.0"
+  }
+}

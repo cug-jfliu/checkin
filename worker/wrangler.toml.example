@@ -1,0 +1,17 @@
+name = "checkin-worker"
+main = "src/index.ts"
+compatibility_date = "2026-03-31"
+
+[assets]
+# 方案B：同一个 Worker 同时托管前端静态资源与 /api 后端
+directory = "../frontend/dist"
+
+[vars]
+# 与 Rust 后端一致：默认 UTC+8（Asia/Shanghai）
+TIMEZONE_OFFSET_HOURS = "8"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "checkin_db"
+database_id = "REPLACE_ME"
+

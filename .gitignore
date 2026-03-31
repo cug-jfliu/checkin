@@ -13,6 +13,14 @@ frontend/.vite/
 frontend/.pnpm-store/
 
 # ================================
+# Node / Worker (Cloudflare)
+# ================================
+worker/node_modules/
+worker/.wrangler/
+worker/.pnpm-store/
+worker/wrangler.toml
+
+# ================================
 # Database
 # ================================
 **/*.sqlite
@@ -37,6 +45,7 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+.pnpm-store/
 
 # ================================
 # Logs

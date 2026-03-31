@@ -24,6 +24,7 @@ checkin/
 │   │   └── utils/    # JWT、认证守卫、错误处理
 │   ├── Dockerfile
 │   └── .env.example
+├── worker/           # Cloudflare Workers 后端（Hono + D1 + JWT）
 └── frontend/         # React 前端
     ├── src/
     │   ├── pages/    # 页面组件（登录、打卡、管理后台）
@@ -55,6 +56,7 @@ checkin/
 
 - Rust（推荐通过 [rustup](https://rustup.rs/) 安装）
 - Node.js ≥ 18 + pnpm（或 npm）
+- Cloudflare Wrangler（在 `worker/` 中作为 devDependency 安装）
 
 ### 后端
 
@@ -83,6 +85,30 @@ cp .env.example .env.development
 # 启动开发服务器（监听 :5173）
 pnpm dev
 ```
+
+### Worker（Cloudflare Workers + D1）
+
+```bash
+cd worker
+
+# 安装依赖
+pnpm install
+
+# 1) 创建 D1 数据库（首次执行）
+pnpm wrangler d1 create checkin_db
+# 将输出的 database_id 填入 worker/wrangler.toml 的 database_id
+
+# 2) 设置 JWT 密钥（本地/远程都可用；生产环境务必设置）
+pnpm wrangler secret put JWT_SECRET
+
+# 3) 初始化表结构（本地）
+pnpm d1:migrate:local
+
+# 4) 启动本地开发（推荐：本地模式）
+pnpm dev
+```
+
+> 说明：Rust 后端会在启动时自动跑 migration；Workers 版本改为通过 `wrangler d1 migrations apply` 显式执行（见脚本 `d1:migrate:*`）。
 
 ---
 
