@@ -1,5 +1,6 @@
 import { scrypt } from '@noble/hashes/scrypt'
 import { randomBytes } from '@noble/hashes/utils'
+import { compareSync as bcryptCompareSync } from 'bcryptjs'
 
 const SCRYPT_N = 1 << 16
 const SCRYPT_r = 8
@@ -38,7 +39,11 @@ export function hashPassword(password: string): PasswordHash {
   return `scrypt$${SCRYPT_N}$${SCRYPT_r}$${SCRYPT_p}$${b64u(salt)}$${b64u(dk)}`
 }
 
-export function verifyPassword(password: string, stored: PasswordHash): boolean {
+function isBcryptHash(stored: string) {
+  return stored.startsWith('$2a$') || stored.startsWith('$2b$') || stored.startsWith('$2y$')
+}
+
+function verifyScryptPassword(password: string, stored: PasswordHash): boolean {
   const parts = stored.split('$')
   if (parts.length !== 6) return false
   const [alg, nStr, rStr, pStr, saltStr, dkStr] = parts
@@ -53,5 +58,21 @@ export function verifyPassword(password: string, stored: PasswordHash): boolean 
   const dkExpected = unb64u(dkStr!)
   const dk = scrypt(password, salt, { N, r, p, dkLen: dkExpected.length })
   return timingSafeEqual(dk, dkExpected)
+}
+
+export type VerifyPasswordResult = {
+  ok: boolean
+  // bcrypt 旧格式验证通过后，建议升级成当前 scrypt 存储
+  needsRehash: boolean
+}
+
+export function verifyPassword(password: string, stored: PasswordHash): VerifyPasswordResult {
+  if (isBcryptHash(stored)) {
+    const ok = bcryptCompareSync(password, stored)
+    return { ok, needsRehash: ok }
+  }
+
+  const ok = verifyScryptPassword(password, stored)
+  return { ok, needsRehash: false }
 }
 

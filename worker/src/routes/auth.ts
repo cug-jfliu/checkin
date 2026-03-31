@@ -79,8 +79,14 @@ authRoutes.post('/login', async (c) => {
   ])
 
   if (!user) return jsonError(c, 401, 'Invalid username or password')
-  if (!verifyPassword(payload.password, user.password_hash))
-    return jsonError(c, 401, 'Invalid username or password')
+  const verify = verifyPassword(payload.password, user.password_hash)
+  if (!verify.ok) return jsonError(c, 401, 'Invalid username or password')
+
+  // 兼容旧 bcrypt：登录成功后自动升级为当前 scrypt 存储格式
+  if (verify.needsRehash) {
+    const newHash = hashPassword(payload.password)
+    await dbExec(c.env.DB, 'UPDATE users SET password_hash = ?2 WHERE id = ?1', [user.id, newHash])
+  }
 
   const token = await createToken({
     userId: user.id,
