@@ -3,12 +3,20 @@ main = "src/index.ts"
 compatibility_date = "2026-03-31"
 
 [assets]
-# 方案B：同一个 Worker 同时托管前端静态资源与 /api 后端
 directory = "../frontend/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*", "/docs", "/openapi.json", "/health", "/typst/*"]
 
 [vars]
-# 与 Rust 后端一致：默认 UTC+8（Asia/Shanghai）
 TIMEZONE_OFFSET_HOURS = "8"
+# 默认为 "https://unpkg.com/@myriaddreamin/typst-ts-web-compiler@0.7.0-rc2/pkg/typst_ts_web_compiler_bg.wasm"
+TYPST_WASM_UPSTREAM_URL = ""
+TYPST_WASM_KEY = "typst/typst_ts_web_compiler_bg.wasm"
+
+[[r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "REPLACE_ME"
 
 [[d1_databases]]
 binding = "DB"

@@ -1,19 +1,8 @@
-// Compiler-only PDF export — no renderer WASM needed.
-// TypstCompiler.compile({ format: pdf }) generates PDF directly without the renderer.
-// WASM loaded via fetch() (not dynamic import) to bypass Vite's module interception.
-
 import { createTypstCompiler } from '@myriaddreamin/typst.ts/compiler';
-import { loadFonts } from '@myriaddreamin/typst.ts/options.init';
+import { disableDefaultFontAssets, loadFonts } from '@myriaddreamin/typst.ts/options.init';
 import { getDayDetail } from 'chinese-days';
 
-// 重要：不要用 `...?url` 导入 wasm，否则会被打包进 dist/assets，可能超过 Workers 单文件 25MiB 限制。
-// 方案B（前端随 Worker 一起部署）建议把 wasm 放到外部（R2/Pages/CDN），在运行时 fetch。
-const DEFAULT_WASM_URL =
-  'https://unpkg.com/@myriaddreamin/typst-ts-web-compiler@0.7.0-rc2/pkg/typst_ts_web_compiler_bg.wasm';
-const wasmUrl =
-  (import.meta as any).env?.VITE_TYPST_COMPILER_WASM_URL?.toString?.() ||
-  DEFAULT_WASM_URL;
-
+const WASM_URL = "/typst/typst_ts_web_compiler_bg.wasm";
 // NotoSerifCJKsc — the CJK font from typst-dev-assets, required for Chinese text
 // Hosted locally in public/fonts/ to avoid CDN failures in China
 const CJK_FONT_URL = '/fonts/NotoSerifCJKsc-Regular.otf';
@@ -27,10 +16,9 @@ async function getCompiler(): Promise<any> {
   if (win[WIN_KEY]) return win[WIN_KEY];
 
   const compiler = createTypstCompiler();
-  // getModule: use fetch() — avoids dynamic import('./wasm') which Vite intercepts
   await compiler.init({
-    getModule: () => WebAssembly.compileStreaming(fetch(wasmUrl)),
-    beforeBuild: [loadFonts([CJK_FONT_URL])],
+    getModule: () => ({ module_or_path: WebAssembly.compileStreaming(fetch(WASM_URL)) }),
+    beforeBuild: [disableDefaultFontAssets(), loadFonts([CJK_FONT_URL])],
   });
 
   win[WIN_KEY] = compiler;
